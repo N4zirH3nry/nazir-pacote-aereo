@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculadora de Orçamento de Passagens</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between antialiased">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-950/50 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-500/20">
+          <i class="fa-solid font-bold fa-plane-departure text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-white tracking-tight">Calculadora de Passagens</h1>
+          <p class="text-xs text-slate-400">Conversão de milhas + margem comercial</p>
+        </div>
+      </div>
+      <div class="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/50 text-xs font-medium text-slate-300">
+        Margem: <span class="text-emerald-400 font-bold">20% (/0.80)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-5xl mx-auto px-4 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+    
+    <!-- Input Section -->
+    <section class="lg:col-span-5 bg-slate-800/50 border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-6 flex flex-col justify-between">
+      <div class="space-y-6">
+        <h2 class="text-lg font-semibold text-white flex items-center gap-2 border-b border-slate-700/80 pb-3">
+          <i class="fa-solid fa-sliders text-indigo-400"></i> Parâmetros de Entrada
+        </h2>
+
+        <!-- Companhia Aérea -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Companhia Aérea</label>
+          <div class="grid grid-cols-3 gap-3" id="airlineSelector">
+            <button type="button" onclick="selectAirline('latam')" id="btn-latam" class="airline-btn bg-indigo-600 text-white border border-indigo-500 py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all shadow-md">
+              <i class="fa-solid fa-plane"></i> LATAM
+            </button>
+            <button type="button" onclick="selectAirline('smiles')" id="btn-smiles" class="airline-btn bg-slate-700/50 hover:bg-slate-700 text-slate-300 border border-slate-600 py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all">
+              <i class="fa-solid fa-plane"></i> SMILES
+            </button>
+            <button type="button" onclick="selectAirline('livre')" id="btn-livre" class="airline-btn bg-slate-700/50 hover:bg-slate-700 text-slate-300 border border-slate-600 py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all">
+              <i class="fa-solid fa-tag"></i> LIVRE
+            </button>
+          </div>
+        </div>
+
+        <!-- Quantidade de Milhas -->
+        <div id="milesSection">
+          <label for="milesInput" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+            Quantidade Total de Milhas
+          </label>
+          <div class="relative">
+            <input type="number" id="milesInput" value="38597" placeholder="Ex: 38597" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 pl-10 text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-500" />
+            <i class="fa-solid fa-ticket text-slate-500 absolute left-3.5 top-3.5"></i>
+          </div>
+          <p class="text-xs text-slate-400 mt-1.5 flex justify-between">
+            <span>Milheiro arredondado:</span>
+            <span id="roundedMilesText" class="font-bold text-indigo-300">39k milhas</span>
+          </p>
+        </div>
+
+        <!-- Taxa de Embarque -->
+        <div id="taxSection">
+          <label for="taxInput" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+            Taxa de Embarque (R$)
+          </label>
+          <div class="relative">
+            <input type="number" step="0.01" id="taxInput" value="82.74" placeholder="Ex: 82.74" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 pl-10 text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-500" />
+            <i class="fa-solid fa-brazilian-real-sign text-slate-500 absolute left-3.5 top-3.5"></i>
+          </div>
+          <p class="text-xs text-slate-400 mt-1.5 flex justify-between">
+            <span>Taxa arredondada:</span>
+            <span id="roundedTaxText" class="font-bold text-indigo-300">R$ 83,00</span>
+          </p>
+        </div>
+
+        <!-- Seção alternativa: Modo LIVRE -->
+        <div id="livreSection" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Companhia - Trecho de Ida</label>
+            <select id="airlineIda" onchange="syncAirlineVolta(); calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-3 text-white font-medium focus:ring-2 focus:ring-indigo-500 outline-none text-sm cursor-pointer">
+              <option value="Azul">Azul</option>
+              <option value="GOL">GOL</option>
+              <option value="LATAM" selected>LATAM</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Companhia - Trecho de Volta</label>
+            <div class="flex gap-2">
+              <select id="airlineVolta" onchange="calculate()" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-3 text-white font-medium focus:ring-2 focus:ring-indigo-500 outline-none text-sm cursor-pointer">
+                <option value="Azul">Azul</option>
+                <option value="GOL">GOL</option>
+                <option value="LATAM" selected>LATAM</option>
+              </select>
+              <button onclick="syncAirlineVolta()" title="Usar mesma companhia da ida" class="bg-slate-700/60 hover:bg-slate-700 text-slate-300 border border-slate-600 px-3 rounded-xl transition-all cursor-pointer shrink-0">
+                <i class="fa-solid fa-clone text-sm"></i>
+              </button>
+            </div>
+          </div>
+          <div>
+            <label for="livrePriceInput" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Preço Total Geral (R$) <span class="text-slate-500 normal-case">já com taxas</span></label>
+            <div class="relative">
+              <input type="number" step="0.01" id="livrePriceInput" value="" placeholder="Ex: 2500.00" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 pl-10 text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-500" />
+              <i class="fa-solid fa-brazilian-real-sign text-slate-500 absolute left-3.5 top-3.5"></i>
+            </div>
+            <p class="text-xs text-slate-400 mt-1.5 flex justify-between">
+              <span>Preço informado:</span>
+              <span id="livreTotalText" class="font-bold text-indigo-300">R$ 0,00</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Novos Campos: Detalhes do Voo -->
+        <div class="pt-2">
+          <h3 class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">Rotas e Horários</h3>
+          
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label for="origemInput" class="block text-[10px] font-semibold text-slate-400 mb-1 uppercase">Origem</label>
+              <input type="text" id="origemInput" placeholder="Ex: Brasilia" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+            </div>
+            <div>
+              <label for="destinoInput" class="block text-[10px] font-semibold text-slate-400 mb-1 uppercase">Destino</label>
+              <input type="text" id="destinoInput" value="Foz do Iguaçu" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div class="bg-slate-900/50 p-2 rounded-xl border border-slate-700/50">
+              <label class="block text-[10px] font-bold text-indigo-400 uppercase mb-2 text-center border-b border-slate-700/50 pb-1">Voo de Ida</label>
+              <div class="space-y-2">
+                <div>
+                  <label for="idaSaida" class="block text-[10px] text-slate-400 mb-0.5">Saída</label>
+                  <input type="time" id="idaSaida" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none [color-scheme:dark]" />
+                </div>
+                <div>
+                  <label for="idaChegada" class="block text-[10px] text-slate-400 mb-0.5">Chegada</label>
+                  <input type="time" id="idaChegada" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none [color-scheme:dark]" />
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-slate-900/50 p-2 rounded-xl border border-slate-700/50">
+              <label class="block text-[10px] font-bold text-indigo-400 uppercase mb-2 text-center border-b border-slate-700/50 pb-1">Voo de Volta</label>
+              <div class="space-y-2">
+                <div>
+                  <label for="voltaSaida" class="block text-[10px] text-slate-400 mb-0.5">Saída</label>
+                  <input type="time" id="voltaSaida" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none [color-scheme:dark]" />
+                </div>
+                <div>
+                  <label for="voltaChegada" class="block text-[10px] text-slate-400 mb-0.5">Chegada</label>
+                  <input type="time" id="voltaChegada" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none [color-scheme:dark]" />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+             <label for="paxInput" class="block text-[10px] font-semibold text-slate-400 mb-1 uppercase">Nº de Pessoas (Para observação)</label>
+             <input type="number" id="paxInput" value="2" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+          </div>
+        </div>
+
+        <hr class="border-slate-700/80 my-4">
+        
+        <h2 class="text-lg font-semibold text-white flex items-center gap-2 border-b border-slate-700/80 pb-3">
+          <i class="fa-solid fa-hotel text-indigo-400"></i> Parâmetros do Hotel
+        </h2>
+
+        <!-- Nome do Hotel -->
+        <div>
+          <label for="hotelName" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Nome do Hotel</label>
+          <div class="relative">
+            <input type="text" id="hotelName" placeholder="Ex: Hotel Bella Italia" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 pl-10 text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-500" />
+            <i class="fa-solid fa-bed text-slate-500 absolute left-3.5 top-3.5"></i>
+          </div>
+        </div>
+
+        <!-- Datas -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="checkinDate" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Check-in</label>
+            <input type="date" id="checkinDate" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-3 text-white font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm" />
+          </div>
+          <div>
+            <label for="checkoutDate" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Check-out</label>
+            <input type="date" id="checkoutDate" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-3 text-white font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm" />
+          </div>
+        </div>
+
+        <!-- Valores Hotel -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="hotelBalcao" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2" title="Valor balcão ou Booking">Valor Balcão (De)</label>
+            <div class="relative">
+              <input type="number" step="0.01" id="hotelBalcao" placeholder="Ex: 1000.00" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-3 pl-8 text-white font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm" />
+              <i class="fa-solid fa-dollar-sign text-slate-500 absolute left-3 top-3.5 text-xs"></i>
+            </div>
+          </div>
+          <div>
+            <label for="hotelInterno" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2" title="Valor na plataforma interna">Valor Interno (Por)</label>
+            <div class="relative">
+              <input type="number" step="0.01" id="hotelInterno" placeholder="Ex: 800.00" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-3 pl-8 text-white font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm" />
+              <i class="fa-solid fa-dollar-sign text-slate-500 absolute left-3 top-3.5 text-xs"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Reset Button -->
+      <button onclick="resetValues()" class="w-full py-2.5 px-4 bg-slate-700/40 hover:bg-slate-700/80 text-slate-400 hover:text-slate-200 border border-slate-700 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-2">
+        <i class="fa-solid fa-rotate-right"></i> Restaurar Exemplo Inicial
+      </button>
+    </section>
+
+    <!-- Result & Calculation Steps -->
+    <section class="lg:col-span-7 space-y-6 flex flex-col justify-between">
+      
+      <!-- Card Valor Final -->
+      <div class="bg-gradient-to-br from-indigo-900/60 via-slate-800 to-slate-900 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+          <i class="fa-solid fa-calculator text-9xl text-white"></i>
+        </div>
+        <span class="text-xs font-bold uppercase tracking-widest text-indigo-400 bg-indigo-950/80 border border-indigo-800 px-3 py-1 rounded-full">
+          Resultado Final
+        </span>
+        <div class="mt-4">
+          <p class="text-xs text-slate-400 font-medium">Preço sugerido ao cliente</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <span class="text-4xl sm:text-5xl font-black text-white tracking-tight" id="finalPriceDisplay">R$ 1.470,00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalhamento Passo a Passo -->
+      <div id="calcStepsSection" class="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
+        <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2 border-b border-slate-700/80 pb-3">
+          <i class="fa-solid fa-list-check text-indigo-400"></i> Memória de Cálculo Detalhada
+        </h3>
+
+        <div class="space-y-3 text-sm" id="calculationSteps">
+          <!-- Etapa 1 -->
+          <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="bg-indigo-950 text-indigo-400 font-bold w-6 h-6 rounded-full flex items-center justify-center text-xs shrink-0 mt-0.5">1</div>
+            <div class="flex-1">
+              <p class="text-xs text-slate-400">Arredondamento de Milhas</p>
+              <p class="text-slate-200 font-medium mt-0.5" id="step1Text">38.597 milhas ➔ <strong>39 milheiros</strong></p>
+            </div>
+          </div>
+
+          <!-- Etapa 2 -->
+          <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="bg-indigo-950 text-indigo-400 font-bold w-6 h-6 rounded-full flex items-center justify-center text-xs shrink-0 mt-0.5">2</div>
+            <div class="flex-1">
+              <p class="text-xs text-slate-400">Cálculo do Custo de Milhas</p>
+              <p class="text-slate-200 font-medium mt-0.5" id="step2Text">39 x R$ 28,00 = <strong>R$ 1.092,00</strong></p>
+              <p class="text-xs text-slate-500 mt-0.5" id="step2Sub">Faixa aplicável: 30k a 50k (LATAM)</p>
+            </div>
+          </div>
+
+          <!-- Etapa 3 -->
+          <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="bg-indigo-950 text-indigo-400 font-bold w-6 h-6 rounded-full flex items-center justify-center text-xs shrink-0 mt-0.5">3</div>
+            <div class="flex-1">
+              <p class="text-xs text-slate-400">Subtotal com Taxa de Embarque</p>
+              <p class="text-slate-200 font-medium mt-0.5" id="step3Text">R$ 1.092,00 + R$ 83,00 = <strong>R$ 1.175,00</strong></p>
+            </div>
+          </div>
+
+          <!-- Etapa 4 -->
+          <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="bg-indigo-950 text-indigo-400 font-bold w-6 h-6 rounded-full flex items-center justify-center text-xs shrink-0 mt-0.5">4</div>
+            <div class="flex-1">
+              <p class="text-xs text-slate-400">Aplicação da Margem (÷ 0,80)</p>
+              <p class="text-slate-200 font-medium mt-0.5" id="step4Text">R$ 1.175,00 / 0,80 = <strong>R$ 1.468,75</strong></p>
+            </div>
+          </div>
+
+          <!-- Etapa 5 -->
+          <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="bg-indigo-950 text-indigo-400 font-bold w-6 h-6 rounded-full flex items-center justify-center text-xs shrink-0 mt-0.5">5</div>
+            <div class="flex-1">
+              <p class="text-xs text-slate-400">Arredondamento Final</p>
+              <p class="text-slate-200 font-medium mt-0.5" id="step5Text">R$ 1.468,75 ➔ <strong>R$ 1.470,00</strong></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumo da Cotação (Aéreo + Hotel) -->
+      <div class="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
+        <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between border-b border-slate-700/80 pb-3">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-receipt text-indigo-400"></i> Resumo da Cotação</span>
+          <div class="flex items-center gap-2">
+            <button onclick="openLiveOverlay()" class="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-md cursor-pointer">
+              <i class="fa-solid fa-video"></i> Versão Live
+            </button>
+            <button id="copyBtn" onclick="copySummary()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-md cursor-pointer">
+              <i class="fa-regular fa-clone"></i> Copiar
+            </button>
+          </div>
+        </h3>
+        <div class="bg-slate-900 rounded-xl p-4 border border-slate-700">
+          <pre id="quoteSummary" class="text-sm text-slate-300 whitespace-pre-wrap font-mono leading-relaxed font-medium">Preencha os dados para gerar o resumo.</pre>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Tabela de Referência Rápida (Footer) -->
+  <footer id="refTableFooter" class="border-t border-slate-800 bg-slate-950/60 py-6 mt-6">
+    <div class="max-w-5xl mx-auto px-4">
+      <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Tabela de Referência de Milheiros</h4>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <!-- Latam -->
+        <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+          <p class="font-bold text-indigo-400 mb-1">LATAM</p>
+          <ul class="space-y-1 text-slate-300">
+            <li class="flex justify-between"><span>10k a 30k</span> <span class="font-semibold text-white">R$ 29,50</span></li>
+            <li class="flex justify-between"><span>30k a 50k</span> <span class="font-semibold text-white">R$ 28,00</span></li>
+            <li class="flex justify-between"><span>50k a 100k</span> <span class="font-semibold text-white">R$ 26,75</span></li>
+            <li class="flex justify-between"><span>Acima de 100k</span> <span class="font-semibold text-white">R$ 26,00</span></li>
+          </ul>
+        </div>
+        <!-- Smiles -->
+        <div class="bg-slate-900 p-3 rounded-xl border border-slate-800">
+          <p class="font-bold text-amber-400 mb-1">SMILES</p>
+          <ul class="space-y-1 text-slate-300">
+            <li class="flex justify-between"><span>1k a 30k</span> <span class="font-semibold text-white">R$ 18,00</span></li>
+            <li class="flex justify-between"><span>31k a 99k</span> <span class="font-semibold text-white">R$ 17,25</span></li>
+            <li class="flex justify-between"><span>Acima de 100k</span> <span class="font-semibold text-white">R$ 16,50</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal Versão Live -->
+  <div id="liveOverlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+    <div id="liveModal" class="bg-slate-800 border border-purple-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl shadow-purple-500/10 transform transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="bg-purple-500/20 p-2.5 rounded-xl">
+            <i class="fa-solid fa-video text-purple-400 text-xl"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white">Versão Resumida (Live)</h3>
+        </div>
+        <button onclick="closeLiveOverlay()" class="text-slate-400 hover:text-white transition-colors cursor-pointer">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+      <div class="bg-slate-900 rounded-xl p-4 border border-slate-700 mb-4">
+        <pre id="liveSummaryText" class="text-sm text-slate-200 whitespace-pre-wrap font-mono leading-relaxed font-medium"></pre>
+      </div>
+      <button id="copyLiveBtn" onclick="copyLiveSummary()" class="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all text-sm cursor-pointer flex items-center justify-center gap-2">
+        <i class="fa-regular fa-clone"></i> Copiar Versão Live
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal Aviso SMILES -->
+  <div id="smilesAlertOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+    <div id="smilesAlertModal" class="bg-slate-800 border border-amber-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl shadow-amber-500/10 transform transition-all">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="bg-amber-500/20 p-2.5 rounded-xl">
+          <i class="fa-solid fa-triangle-exclamation text-amber-400 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-bold text-white">Atenção - Calculadora SMILES</h3>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-700 rounded-xl p-4 mb-5">
+        <p class="text-sm text-slate-300 leading-relaxed space-y-2">
+          <span class="block"><i class="fa-solid fa-circle-check text-amber-400 mr-1.5"></i> <strong class="text-white">Divida o total de milhas pelo número de pessoas</strong> antes de inserir na calculadora.</span>
+          <span class="block"><i class="fa-solid fa-circle-check text-amber-400 mr-1.5"></i> A taxa de embarque já é dividida automaticamente pelo número de passageiros no modo SMILES.</span>
+          <span class="block"><i class="fa-solid fa-circle-check text-amber-400 mr-1.5"></i> Insira os dados referentes a <strong class="text-white">apenas um passageiro</strong> para o cálculo correto.</span>
+        </p>
+      </div>
+      <button onclick="closeSmilesAlert()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-xl transition-all text-sm cursor-pointer">
+        Entendido
+      </button>
+    </div>
+  </div>
+
+  <script>
+    function openSmilesAlert() {
+      const overlay = document.getElementById('smilesAlertOverlay');
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      const modal = document.getElementById('smilesAlertModal');
+      modal.style.transform = 'scale(1)';
+      modal.style.opacity = '1';
+    }
+
+    function closeSmilesAlert() {
+      const overlay = document.getElementById('smilesAlertOverlay');
+      const modal = document.getElementById('smilesAlertModal');
+      modal.style.transform = 'scale(0.95)';
+      modal.style.opacity = '0';
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+      }, 150);
+    }
+
+    document.getElementById('smilesAlertOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closeSmilesAlert();
+    });
+
+    function openLiveOverlay() {
+      const airlineIdaName = window._airlineIdaName || 'LATAM';
+      const airlineVoltaName = window._airlineVoltaName || 'LATAM';
+      const origem = document.getElementById('origemInput').value || '[Origem]';
+      const destino = document.getElementById('destinoInput').value || '[Destino]';
+      const paxStr = document.getElementById('paxInput').value || '2';
+      const checkin = document.getElementById('checkinDate').value;
+      const checkout = document.getElementById('checkoutDate').value;
+      const hotelName = document.getElementById('hotelName').value || '[Nome do Hotel]';
+      const hotelBalcao = parseFloat(document.getElementById('hotelBalcao').value) || 0;
+      const hotelInterno = parseFloat(document.getElementById('hotelInterno').value) || 0;
+
+      const paxNum = parseInt(paxStr) || 1;
+
+      // Pegar o preço final já calculado da tela
+      const finalPriceText = document.getElementById('finalPriceDisplay').innerText;
+      const finalPrice = parseFloat(finalPriceText.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+
+      const pacoteDe = finalPrice + hotelBalcao;
+      const pacotePor = finalPrice + hotelInterno;
+
+      let diarias = 0;
+      if (checkin && checkout) {
+        const ci = new Date(checkin);
+        const co = new Date(checkout);
+        const diffTime = co - ci;
+        if (diffTime > 0) diarias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      const idaSaida = formatTimeText(document.getElementById('idaSaida').value);
+      const idaChegada = formatTimeText(document.getElementById('idaChegada').value);
+      const voltaSaida = formatTimeText(document.getElementById('voltaSaida').value);
+      const voltaChegada = formatTimeText(document.getElementById('voltaChegada').value);
+
+      const companhiaIdaText = airlineIdaName !== airlineVoltaName
+        ? `Ida voando ${airlineIdaName} / Volta voando ${airlineVoltaName}`
+        : `voando ${airlineIdaName}`;
+
+      const liveText = `*PACOTE AÉREO, ${origem.toUpperCase()} A ${destino.toUpperCase()}*
+
+*PERÍODO DO PACOTE - ${formatDate(checkin)} A ${formatDate(checkout)}*
+
+👉🏻 *O Pacote inclui*
+
+-${diarias || 'X'} diárias com café da manhã no *${hotelName}*
+
+*Passagem Aérea ${companhiaIdaText}*
+
+*${formatShortDate(checkin)}* - ${origem} / ${destino} - saída às ${idaSaida} chegada às ${idaChegada}
+*${formatShortDate(checkout)}* - ${destino} / ${origem} - saída às ${voltaSaida} chegada às ${voltaChegada}
+
+❌ *DE = ${formatBRL(pacoteDe)} para ${paxStr} pessoas*
+
+✅ *POR = ${formatBRL(pacotePor)} para ${paxStr} pessoas*`;
+
+      document.getElementById('liveSummaryText').innerText = liveText;
+
+      const overlay = document.getElementById('liveOverlay');
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+    }
+
+    function closeLiveOverlay() {
+      const overlay = document.getElementById('liveOverlay');
+      overlay.classList.add('hidden');
+      overlay.classList.remove('flex');
+    }
+
+    document.getElementById('liveOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closeLiveOverlay();
+    });
+
+    function copyLiveSummary() {
+      const textToCopy = document.getElementById('liveSummaryText').innerText;
+      const tempTextArea = document.createElement("textarea");
+      tempTextArea.value = textToCopy;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempTextArea);
+
+      const btn = document.getElementById('copyLiveBtn');
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+      btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+      btn.classList.remove('bg-purple-600', 'hover:bg-purple-500');
+      setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+        btn.classList.add('bg-purple-600', 'hover:bg-purple-500');
+      }, 2000);
+    }
+
+    let currentAirline = 'latam';
+
+    let flightData = {
+      latam: { miles: 38597, tax: 82.74, origem: '', destino: 'Foz do Iguaçu', idaSaida: '', idaChegada: '', voltaSaida: '', voltaChegada: '', pax: '2', airlineIda: 'LATAM', airlineVolta: 'LATAM', livrePrice: '' },
+      smiles: { miles: 38597, tax: 82.74, origem: '', destino: 'Foz do Iguaçu', idaSaida: '', idaChegada: '', voltaSaida: '', voltaChegada: '', pax: '2', airlineIda: 'LATAM', airlineVolta: 'LATAM', livrePrice: '' },
+      livre: { miles: 0, tax: 0, origem: '', destino: 'Foz do Iguaçu', idaSaida: '', idaChegada: '', voltaSaida: '', voltaChegada: '', pax: '2', airlineIda: 'LATAM', airlineVolta: 'LATAM', livrePrice: '' }
+    };
+
+    function saveCurrentFlightData() {
+      flightData[currentAirline] = {
+        miles: document.getElementById('milesInput').value,
+        tax: document.getElementById('taxInput').value,
+        origem: document.getElementById('origemInput').value,
+        destino: document.getElementById('destinoInput').value,
+        idaSaida: document.getElementById('idaSaida').value,
+        idaChegada: document.getElementById('idaChegada').value,
+        voltaSaida: document.getElementById('voltaSaida').value,
+        voltaChegada: document.getElementById('voltaChegada').value,
+        pax: document.getElementById('paxInput').value,
+        airlineIda: document.getElementById('airlineIda').value,
+        airlineVolta: document.getElementById('airlineVolta').value,
+        livrePrice: document.getElementById('livrePriceInput').value
+      };
+    }
+
+    function loadFlightData() {
+      const data = flightData[currentAirline];
+      document.getElementById('milesInput').value = data.miles;
+      document.getElementById('taxInput').value = data.tax;
+      document.getElementById('origemInput').value = data.origem;
+      document.getElementById('destinoInput').value = data.destino;
+      document.getElementById('idaSaida').value = data.idaSaida;
+      document.getElementById('idaChegada').value = data.idaChegada;
+      document.getElementById('voltaSaida').value = data.voltaSaida;
+      document.getElementById('voltaChegada').value = data.voltaChegada;
+      document.getElementById('paxInput').value = data.pax;
+      document.getElementById('airlineIda').value = data.airlineIda || 'LATAM';
+      document.getElementById('airlineVolta').value = data.airlineVolta || 'LATAM';
+      document.getElementById('livrePriceInput').value = data.livrePrice || '';
+    }
+
+    function selectAirline(airline) {
+      if (currentAirline === airline) return;
+
+      saveCurrentFlightData();
+      currentAirline = airline;
+      
+      const btnLatam = document.getElementById('btn-latam');
+      const btnSmiles = document.getElementById('btn-smiles');
+      const btnLivre = document.getElementById('btn-livre');
+
+      const inactiveClass = "airline-btn bg-slate-700/50 hover:bg-slate-700 text-slate-300 border border-slate-600 py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all";
+      const latamActive = "airline-btn bg-indigo-600 text-white border border-indigo-500 py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all shadow-md";
+      const smilesActive = "airline-btn bg-amber-600 text-white border border-amber-500 py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all shadow-md";
+      const livreActive = "airline-btn bg-emerald-600 text-white border border-emerald-500 py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all shadow-md";
+
+      btnLatam.className = inactiveClass;
+      btnSmiles.className = inactiveClass;
+      btnLivre.className = inactiveClass;
+
+      if (airline === 'latam') {
+        btnLatam.className = latamActive;
+      } else if (airline === 'smiles') {
+        btnSmiles.className = smilesActive;
+      } else {
+        btnLivre.className = livreActive;
+      }
+
+      // Mostrar/esconder seções conforme o modo
+      const milesSection = document.getElementById('milesSection');
+      const taxSection = document.getElementById('taxSection');
+      const livreSection = document.getElementById('livreSection');
+      const calcSteps = document.getElementById('calcStepsSection');
+      const refTable = document.getElementById('refTableFooter');
+
+      if (airline === 'livre') {
+        milesSection.classList.add('hidden');
+        taxSection.classList.add('hidden');
+        livreSection.classList.remove('hidden');
+        calcSteps.classList.add('hidden');
+        refTable.classList.add('hidden');
+      } else {
+        milesSection.classList.remove('hidden');
+        taxSection.classList.remove('hidden');
+        livreSection.classList.add('hidden');
+        calcSteps.classList.remove('hidden');
+        refTable.classList.remove('hidden');
+      }
+
+      loadFlightData();
+      calculate();
+
+      if (airline === 'smiles') {
+        openSmilesAlert();
+      }
+    }
+
+    function syncAirlineVolta() {
+      const ida = document.getElementById('airlineIda').value;
+      document.getElementById('airlineVolta').value = ida;
+      calculate();
+    }
+
+    function getMilheiroRate(airline, milesK) {
+      if (airline === 'latam') {
+        if (milesK <= 30) return { rate: 29.50, range: '10k a 30k' };
+        if (milesK <= 50) return { rate: 28.00, range: '30k a 50k' };
+        if (milesK <= 100) return { rate: 26.75, range: '50k a 100k' };
+        return { rate: 26.00, range: 'Acima de 100k' };
+      } else { // Smiles
+        if (milesK <= 30) return { rate: 18.00, range: '1k a 30k' };
+        if (milesK <= 99) return { rate: 17.25, range: '31k a 99k' };
+        return { rate: 16.50, range: 'Acima de 100k' };
+      }
+    }
+
+    function formatBRL(val) {
+      return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return '[Data]';
+      const [y, m, d] = dateString.split('-');
+      return `${d}/${m}/${y}`;
+    }
+
+    function formatShortDate(dateString) {
+      if (!dateString) return '[Data]';
+      const [y, m, d] = dateString.split('-');
+      return `${d}/${m}`;
+    }
+
+    function formatTimeText(timeString) {
+      if (!timeString) return '[Horário]';
+      return timeString.replace(':', 'h');
+    }
+
+    function calculate() {
+      const paxStr = document.getElementById('paxInput').value || '2';
+      const paxNum = parseInt(paxStr) || 1;
+      let finalPrice = 0;
+      let airlineIdaName, airlineVoltaName;
+
+      if (currentAirline === 'livre') {
+        // --- MODO LIVRE: preço total direto, sem margem ---
+        const livrePrice = parseFloat(document.getElementById('livrePriceInput').value) || 0;
+        finalPrice = livrePrice;
+        airlineIdaName = document.getElementById('airlineIda').value;
+        airlineVoltaName = document.getElementById('airlineVolta').value;
+
+        document.getElementById('livreTotalText').innerText = formatBRL(finalPrice);
+      } else {
+        // --- MODO MILHAS (LATAM / SMILES) ---
+        let rawMiles = parseFloat(document.getElementById('milesInput').value) || 0;
+        let rawTax = parseFloat(document.getElementById('taxInput').value) || 0;
+
+        if (currentAirline === 'smiles' && paxNum > 1) {
+          rawTax = rawTax / paxNum;
+        }
+
+        const roundedMilesK = Math.round(rawMiles / 1000);
+        document.getElementById('roundedMilesText').innerText = `${roundedMilesK}k milhas`;
+
+        const rateInfo = getMilheiroRate(currentAirline, roundedMilesK);
+        const milheiroCost = roundedMilesK * rateInfo.rate;
+
+        const roundedTax = Math.round(rawTax);
+        document.getElementById('roundedTaxText').innerText = formatBRL(roundedTax);
+        const totalWithTax = milheiroCost + roundedTax;
+
+        const totalWithMargin = totalWithTax / 0.80;
+
+        let baseFinalPrice = Math.ceil(totalWithMargin / 10) * 10;
+        finalPrice = baseFinalPrice;
+        if (paxNum > 1) finalPrice = baseFinalPrice * paxNum;
+
+        // Atualizar etapas
+        document.getElementById('step1Text').innerHTML = `${rawMiles.toLocaleString('pt-BR')} milhas ➔ <strong>${roundedMilesK} milheiros</strong>`;
+        document.getElementById('step2Text').innerHTML = `${roundedMilesK} x ${formatBRL(rateInfo.rate)} = <strong>${formatBRL(milheiroCost)}</strong>`;
+        document.getElementById('step2Sub').innerText = `Faixa aplicável: ${rateInfo.range} (${currentAirline.toUpperCase()})`;
+        document.getElementById('step3Text').innerHTML = `${formatBRL(milheiroCost)} + ${formatBRL(roundedTax)} = <strong>${formatBRL(totalWithTax)}</strong>`;
+        document.getElementById('step4Text').innerHTML = `${formatBRL(totalWithTax)} / 0,80 = <strong>${formatBRL(totalWithMargin)}</strong>`;
+        if (paxNum > 1) {
+          document.getElementById('step5Text').innerHTML = `${formatBRL(totalWithMargin)} ➔ <strong>${formatBRL(baseFinalPrice)}</strong> (x${paxNum} pax = <strong>${formatBRL(finalPrice)}</strong>)`;
+        } else {
+          document.getElementById('step5Text').innerHTML = `${formatBRL(totalWithMargin)} ➔ <strong>${formatBRL(finalPrice)}</strong>`;
+        }
+
+        airlineIdaName = currentAirline === 'smiles' ? 'GOL' : 'LATAM';
+        airlineVoltaName = airlineIdaName;
+      }
+
+      // Exibir preço final
+      document.getElementById('finalPriceDisplay').innerText = formatBRL(finalPrice);
+
+      // --- Hotel e Resumo ---
+      const hotelName = document.getElementById('hotelName').value || '[Nome do Hotel]';
+      const checkin = document.getElementById('checkinDate').value;
+      const checkout = document.getElementById('checkoutDate').value;
+      const hotelBalcao = parseFloat(document.getElementById('hotelBalcao').value) || 0;
+      const hotelInterno = parseFloat(document.getElementById('hotelInterno').value) || 0;
+
+      let diarias = 0;
+      if (checkin && checkout) {
+        const ci = new Date(checkin);
+        const co = new Date(checkout);
+        const diffTime = co - ci;
+        if (diffTime > 0) diarias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      const pacoteDe = finalPrice + hotelBalcao;
+      const pacotePor = finalPrice + hotelInterno;
+
+      const origem = document.getElementById('origemInput').value || '[Origem]';
+      const destino = document.getElementById('destinoInput').value || '[Destino]';
+      const idaSaida = formatTimeText(document.getElementById('idaSaida').value);
+      const idaChegada = formatTimeText(document.getElementById('idaChegada').value);
+      const voltaSaida = formatTimeText(document.getElementById('voltaSaida').value);
+      const voltaChegada = formatTimeText(document.getElementById('voltaChegada').value);
+
+      const companhiaIdaText = airlineIdaName !== airlineVoltaName
+        ? `Ida voando ${airlineIdaName} / Volta voando ${airlineVoltaName}`
+        : `voando ${airlineIdaName}`;
+
+      const summaryText = `*PACOTE AÉREO, ${origem.toUpperCase()} A ${destino.toUpperCase()}*
+
+*PERÍODO DO PACOTE - ${formatDate(checkin)} A ${formatDate(checkout)}*
+
+👉🏻 *O Pacote inclui*
+
+-${diarias || 'X'} diárias com café da manhã no *${hotelName}*
+-Passagem Aérea ${companhiaIdaText};
+-Bolsa ou mochila de até 10 kg;
+-Taxas de embarque;
+-Transporte do Aeroporto/Hotel;
+-Transporte do Hotel/Aeroporto;
+
+*Passagem Aérea ${companhiaIdaText}*
+
+*${formatShortDate(checkin)}* - ${origem} / ${destino} - saída às ${idaSaida} chegada às ${idaChegada}
+*${formatShortDate(checkout)}* - ${destino} / ${origem} - saída às ${voltaSaida} chegada às ${voltaChegada}
+
+❌ *DE = ${formatBRL(pacoteDe)} para ${paxStr} pessoas*
+
+✅ *POR = ${formatBRL(pacotePor)} para ${paxStr} pessoas*
+
+*Parcelado sem juros no cartão de crédito em até 10 x sem juros*
+
+*Observações:*
+* Valor para ${paxStr} pessoas.
+* Valores e disponibilidades sujeitos a constantes alterações sem aviso prévio.
+* Check in no hotel, a partir das 14h, check out até as 11h.`;
+
+      document.getElementById('quoteSummary').innerText = summaryText;
+
+      // Guardar nomes das companhias para o live overlay
+      window._airlineIdaName = airlineIdaName;
+      window._airlineVoltaName = airlineVoltaName;
+    }
+
+    function copySummary() {
+      const summaryElement = document.getElementById('quoteSummary');
+      const textToCopy = summaryElement.innerText;
+      
+      const tempTextArea = document.createElement("textarea");
+      tempTextArea.value = textToCopy;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempTextArea);
+      
+      // Feedback visual do botão
+      const btn = document.getElementById('copyBtn');
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+      btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+      btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
+      
+      setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+        btn.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+      }, 2000);
+    }
+
+    function resetValues() {
+      flightData = {
+        latam: { miles: 38597, tax: 82.74, origem: '', destino: 'Foz do Iguaçu', idaSaida: '', idaChegada: '', voltaSaida: '', voltaChegada: '', pax: '2', airlineIda: 'LATAM', airlineVolta: 'LATAM', livrePrice: '' },
+        smiles: { miles: 38597, tax: 82.74, origem: '', destino: 'Foz do Iguaçu', idaSaida: '', idaChegada: '', voltaSaida: '', voltaChegada: '', pax: '2', airlineIda: 'LATAM', airlineVolta: 'LATAM', livrePrice: '' },
+        livre: { miles: 0, tax: 0, origem: '', destino: 'Foz do Iguaçu', idaSaida: '', idaChegada: '', voltaSaida: '', voltaChegada: '', pax: '2', airlineIda: 'LATAM', airlineVolta: 'LATAM', livrePrice: '' }
+      };
+
+      currentAirline = 'latam';
+      loadFlightData();
+
+      document.getElementById('hotelName').value = '';
+      document.getElementById('checkinDate').value = '';
+      document.getElementById('checkoutDate').value = '';
+      document.getElementById('hotelBalcao').value = '';
+      document.getElementById('hotelInterno').value = '';
+      
+      const btnLatam = document.getElementById('btn-latam');
+      const btnSmiles = document.getElementById('btn-smiles');
+      const btnLivre = document.getElementById('btn-livre');
+      btnLatam.className = "airline-btn bg-indigo-600 text-white border border-indigo-500 py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all shadow-md";
+      btnSmiles.className = "airline-btn bg-slate-700/50 hover:bg-slate-700 text-slate-300 border border-slate-600 py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all";
+      btnLivre.className = "airline-btn bg-slate-700/50 hover:bg-slate-700 text-slate-300 border border-slate-600 py-3 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all";
+
+      // Restaurar visibilidade das seções
+      document.getElementById('milesSection').classList.remove('hidden');
+      document.getElementById('taxSection').classList.remove('hidden');
+      document.getElementById('livreSection').classList.add('hidden');
+      document.getElementById('calcStepsSection').classList.remove('hidden');
+      document.getElementById('refTableFooter').classList.remove('hidden');
+
+      calculate();
+    }
+
+    window.onload = function() {
+      calculate();
+    };
+  </script>
+</body>
+</html>
